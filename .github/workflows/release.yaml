@@ -62,15 +62,17 @@ jobs:
         with:
           name: sqlite-vec-windows-x86_64-extension
           path: dist/*
-  # New: Windows ARM64. Same as the x86_64 job, but msvc-dev-cmd `arch: arm64`
-  # cross-targets aarch64 from the x64 host, so cl.exe emits an arm64 vec0.dll.
+  # New: Windows ARM64. Same as the x86_64 job, but msvc-dev-cmd `arch: amd64_arm64`
+  # selects the Hostx64\arm64 cross toolset, so the x64 runner's cl.exe emits an
+  # arm64 vec0.dll. (Plain `arch: arm64` picks the arm64-HOSTED compiler, which is
+  # not runnable on the x64 runner — fails with "cl.exe not recognized".)
   build-windows-aarch64-extension:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
       - uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: arm64
+          arch: amd64_arm64
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
