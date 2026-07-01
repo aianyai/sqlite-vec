@@ -8,49 +8,49 @@ jobs:
   build-linux-x86_64-extension:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: ./scripts/vendor.sh
       - run: make loadable static
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sqlite-vec-linux-x86_64-extension
           path: dist/*
   build-linux-aarch64-extension:
     runs-on: ubuntu-22.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: ./scripts/vendor.sh
       - run: make loadable static
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sqlite-vec-linux-aarch64-extension
           path: dist/*
   build-macos-x86_64-extension:
     runs-on: macos-15-intel
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: ./scripts/vendor.sh
       - run: make loadable static
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sqlite-vec-macos-x86_64-extension
           path: dist/*
   build-macos-aarch64-extension:
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: ./scripts/vendor.sh
       - run: make loadable static
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sqlite-vec-macos-aarch64-extension
           path: dist/*
   build-windows-x86_64-extension:
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ilammy/msvc-dev-cmd@v1
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: ./scripts/vendor.sh
@@ -58,7 +58,7 @@ jobs:
       - run: make sqlite-vec.h
       - run: mkdir dist
       - run: cl.exe /fPIC -shared /W4 /Ivendor/ /O2 /LD sqlite-vec.c -o dist/vec0.dll
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sqlite-vec-windows-x86_64-extension
           path: dist/*
@@ -69,11 +69,11 @@ jobs:
   build-windows-aarch64-extension:
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: amd64_arm64
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: ./scripts/vendor.sh
@@ -81,7 +81,7 @@ jobs:
       - run: make sqlite-vec.h
       - run: mkdir dist
       - run: cl.exe /fPIC -shared /W4 /Ivendor/ /O2 /LD sqlite-vec.c -o dist/vec0.dll
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sqlite-vec-windows-aarch64-extension
           path: dist/*
@@ -98,34 +98,34 @@ jobs:
       name: release
     permissions:
       contents: read
-      id-token: write # needed for --provenance, and for OIDC Trusted Publishing once bootstrapped
+      id-token: write # needed for OIDC Trusted Publishing and --provenance
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: sqlite-vec-linux-x86_64-extension
           path: dist/linux-x86_64
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sqlite-vec-linux-aarch64-extension
           path: dist/linux-aarch64
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sqlite-vec-macos-x86_64-extension
           path: dist/macos-x86_64
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sqlite-vec-macos-aarch64-extension
           path: dist/macos-aarch64
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sqlite-vec-windows-x86_64-extension
           path: dist/windows-x86_64
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sqlite-vec-windows-aarch64-extension
           path: dist/windows-aarch64
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
@@ -133,17 +133,11 @@ jobs:
       - run: npm install -g npm@latest
       - name: Build npm packages
         run: VERSION=$(cat VERSION) node scripts/pack-npm.mjs
-      - name: Publish to npm
-        # BOOTSTRAP (first release): these package names do not exist yet, so a
-        # trusted publisher cannot be configured for them — npm trusted publishers
-        # are set per-package on npmjs.com, which requires the package to exist.
-        # We therefore authenticate with a token for the very first release, which
-        # creates all 7 packages. AFTER this run, configure a trusted publisher on
-        # each package (repo aianyai/sqlite-vec, workflow release.yaml, environment
-        # release), then DELETE the `env:` block below so subsequent releases use
-        # OIDC Trusted Publishing (no long-lived token). Provenance works with both.
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to npm (OIDC Trusted Publishing)
+        # Auth is via OIDC (npm Trusted Publishing) — no NODE_AUTH_TOKEN. Each
+        # @aiany/sqlite-vec* package must have a trusted publisher configured on
+        # npmjs.com (repo aianyai/sqlite-vec, workflow release.yaml, environment
+        # release). Provenance is attached via the id-token permission above.
         run: |
           VERSION=$(cat VERSION)
           if echo "$VERSION" | grep -q "alpha"; then
