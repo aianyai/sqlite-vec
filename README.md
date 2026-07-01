@@ -1,3 +1,12 @@
+<!-- deno-fmt-ignore-start -->
+
+> [!NOTE]
+> **This is [`@aiany/sqlite-vec`](https://github.com/aianyai/sqlite-vec), a fork of [`asg017/sqlite-vec`](https://github.com/asg017/sqlite-vec).**
+> It adds a **`windows-arm64`** build and publishes the full desktop platform matrix under the `@aiany` npm scope. The core extension is unchanged.
+> See **[FORK.md](./FORK.md)** for what differs and how to use it. The rest of this README is upstream's.
+
+<!-- deno-fmt-ignore-end -->
+
 # `sqlite-vec`
 
 [![](https://dcbadge.vercel.app/api/server/VCtQ8cGhUs)](https://discord.gg/Ve7WeCJFXk)

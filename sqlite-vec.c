@@ -770,10 +770,14 @@ static f32 distance_hamming_u8(u8 *a, u8 *b, size_t n) {
 
 #ifdef _MSC_VER
 #if !defined(__clang__) && (defined(_M_ARM) || defined(_M_ARM64))
-// From
+// Adapted from
 // https://github.com/ngtcp2/ngtcp2/blob/b64f1e77b5e0d880b93d31f474147fae4a1d17cc/lib/ngtcp2_ringbuf.c,
-// line 34-43
-static unsigned int __builtin_popcountl(unsigned int x) {
+// line 34-43. Widened the parameter from `unsigned int` to `u64`: the sole
+// caller (distance_hamming_u64) passes a 64-bit `u64`, and a 32-bit parameter
+// would truncate the high half, undercounting the hamming distance on MSVC
+// ARM64. The x86_64 path maps to the 64-bit __popcnt64 intrinsic below, so this
+// keeps both MSVC paths counting all 64 bits.
+static unsigned int __builtin_popcountl(u64 x) {
   unsigned int c = 0;
   for (; x; ++c) {
     x &= x - 1;
