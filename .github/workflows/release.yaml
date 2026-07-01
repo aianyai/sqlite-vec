@@ -96,7 +96,7 @@ jobs:
       name: release
     permissions:
       contents: read
-      id-token: write # OIDC: npm Trusted Publishing (no NODE_AUTH_TOKEN needed)
+      id-token: write # needed for --provenance, and for OIDC Trusted Publishing once bootstrapped
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -131,7 +131,17 @@ jobs:
       - run: npm install -g npm@latest
       - name: Build npm packages
         run: VERSION=$(cat VERSION) node scripts/pack-npm.mjs
-      - name: Publish to npm (OIDC Trusted Publishing)
+      - name: Publish to npm
+        # BOOTSTRAP (first release): these package names do not exist yet, so a
+        # trusted publisher cannot be configured for them — npm trusted publishers
+        # are set per-package on npmjs.com, which requires the package to exist.
+        # We therefore authenticate with a token for the very first release, which
+        # creates all 7 packages. AFTER this run, configure a trusted publisher on
+        # each package (repo aianyai/sqlite-vec, workflow release.yaml, environment
+        # release), then DELETE the `env:` block below so subsequent releases use
+        # OIDC Trusted Publishing (no long-lived token). Provenance works with both.
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           VERSION=$(cat VERSION)
           if echo "$VERSION" | grep -q "alpha"; then
