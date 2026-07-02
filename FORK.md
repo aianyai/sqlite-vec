@@ -28,9 +28,11 @@ The delta is deliberately minimal. The core extension is upstream, untouched,
 except for one narrowly-scoped correctness fix.
 
 1. **Adds a `windows-arm64` target.** A new `build-windows-aarch64-extension`
-   job cross-compiles `vec0.dll` for ARM64 from an x64 Windows runner, using
-   `ilammy/msvc-dev-cmd` with `arch: arm64`. The `cl.exe` compile command is
-   identical to the existing x86_64 job.
+   job cross-compiles `vec0.dll` for ARM64 from an x64 Windows runner. It sets up
+   the MSVC cross toolset with `TheMrMilchmann/setup-msvc-dev` (`arch: amd64_arm64`
+   — host x64, target ARM64), then runs the same `cl.exe` command as the x86_64
+   job. (Plain `arch: arm64` would select the ARM64-hosted compiler, which cannot
+   run on the x64 runner.)
 
 2. **Publishes under the `@aiany` npm scope.** The output is `@aiany/sqlite-vec`
    (the loader) plus one `@aiany/sqlite-vec-<os>-<arch>` package per platform
@@ -66,7 +68,23 @@ except for one narrowly-scoped correctness fix.
 - The five platforms upstream already ships (Linux x64/arm64, macOS x64/arm64,
   Windows x64) compile with the exact same commands and runners as upstream's
   release workflow — their binaries are equivalent.
-- The base is upstream `v0.1.10-alpha.4` (see `VERSION`).
+- The base is upstream `v0.1.10-alpha.4` (see `VERSION`); the fork only adds its
+  own revision suffix on top (see [Versioning](#versioning)).
+
+## Versioning
+
+Releases are tagged `<upstream-version>.aiany.<n>` — e.g. `0.1.10-alpha.4.aiany.2`
+is upstream `0.1.10-alpha.4`, fork revision `2`. This keeps the upstream base
+visible in the version string and, per semver, sorts *after* upstream
+`0.1.10-alpha.4` but *before* a hypothetical upstream `0.1.10-alpha.5` — so the
+fork can ship its own revisions on a given upstream base without ever colliding
+with upstream's version line. Packages are published under the `alpha` dist-tag.
+
+Pin an exact version. Check what is published with:
+
+```bash
+npm view @aiany/sqlite-vec versions
+```
 
 ## Using it
 
@@ -87,7 +105,7 @@ pnpm override, without touching application code:
 ```yaml
 # pnpm-workspace.yaml
 overrides:
-  sqlite-vec: npm:@aiany/sqlite-vec@0.1.10-alpha.4
+  sqlite-vec: npm:@aiany/sqlite-vec@0.1.10-alpha.4.aiany.2
 ```
 
 ## Reverting to upstream
